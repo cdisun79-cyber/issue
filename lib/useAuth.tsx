@@ -2,10 +2,18 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { supabaseBrowser } from "./supabase";
 
+// NEXT_PUBLIC_ 값은 빌드 시 코드에 포함된다. 비어 있으면 Vercel 환경변수 등록 후 재배포 필요.
+const envMissing =
+  !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
 export function useSession() {
   const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   useEffect(() => {
+    if (envMissing) {
+      setReady(true);
+      return;
+    }
     supabaseBrowser().auth.getSession().then(({ data }) => {
       setToken(data.session?.access_token ?? null);
       setReady(true);
@@ -30,6 +38,17 @@ export function LoginGate({ children }: { children: (token: string) => ReactNode
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
 
+  if (envMissing) {
+    return (
+      <div className="card">
+        <h2>환경변수가 설정되지 않았습니다</h2>
+        <p className="err">
+          NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY 값이 없습니다.
+          Vercel → Settings → Environment Variables에 등록한 뒤 Redeploy 하세요.
+        </p>
+      </div>
+    );
+  }
   if (!ready) return <p>불러오는 중…</p>;
   if (token) return <>{children(token)}</>;
 
