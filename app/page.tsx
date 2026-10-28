@@ -1,29 +1,23 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Staff = { id: string; dept_name: string; name: string; rank: string; duties: string | null };
 
 function Compose() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [done, setDone] = useState(false);
   const [press, setPress] = useState("");
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
   const [text, setText] = useState("");
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [saved, setSaved] = useState(false);
   const [cands, setCands] = useState<Staff[]>([]);
   const [picked, setPicked] = useState<Staff | null>(null);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
-  const [kakao, setKakao] = useState<{ connected: boolean; url: string } | null>(null);
-  const boxRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    fetch("/api/kakao/login").then((r) => r.json()).then(setKakao);
-    const k = new URLSearchParams(location.search).get("kakao");
-    if (k) setMsg({ ok: k === "ok", t: k === "ok" ? "카카오 연결 완료" : "카카오 연결 실패" });
-  }, []);
 
   // Ctrl+V 이미지 붙여넣기
   useEffect(() => {
@@ -38,7 +32,8 @@ function Compose() {
   const pick = (f: File) => {
     setFile(f);
     setPreview(URL.createObjectURL(f));
-    setImageUrl(""); setPress(""); setTitle(""); setSummary(""); setText("");
+    setDone(false); setPress(""); setTitle(""); setSummary("");
+    setText(""); setKeywords([]); setSaved(false);
     setCands([]); setPicked(null); setMsg(null);
   };
 
@@ -58,40 +53,45 @@ function Compose() {
     const j = await r.json();
     setBusy(false);
     if (!r.ok) return setMsg({ ok: false, t: j.error });
-    setImageUrl(j.imageUrl);
     setPress(j.press_name ?? ""); setTitle(j.title ?? "");
-    setSummary(j.summary); setText(j.text);
+    setSummary(j.summary);
+    setText(j.text); setKeywords(j.keywords); setSaved(false);
+    setDone(true);
     await searchStaff(`keywords=${encodeURIComponent(j.keywords.join(","))}`);
   };
 
   const headline = press ? `(${press}) ${title}` : title;
   const message = picked ? `*${picked.dept_name}(${picked.name}${picked.rank})전달하겠습니다.` : "";
+  const result = [headline, summary, message].filter(Boolean).join("\n");
 
-  const send = async () => {
-    if (!picked) return;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(result);
+      setMsg({ ok: true, t: "복사했습니다." });
+    } catch {
+      setMsg({ ok: false, t: "복사에 실패했습니다. 직접 선택해서 복사하세요." });
+    }
+  };
+
+  const save = async () => {
     setBusy(true);
-    const r = await fetch("/api/kakao/send", {
+    const r = await fetch("/api/log", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        pressName: press, title, summary, imageUrl, staffId: picked.id, articleText: text,
+        pressName: press, title, summary, keywords, articleText: text,
+        staffId: picked?.id ?? null, message,
       }),
     });
     const j = await r.json();
     setBusy(false);
-    setMsg(r.ok ? { ok: true, t: "카톡으로 보냈습니다." } : { ok: false, t: j.error });
+    if (r.ok) setSaved(true);
+    setMsg(r.ok ? { ok: true, t: "저장했습니다. (이력 메뉴에서 확인)" } : { ok: false, t: j.error });
   };
 
   return (
     <>
-      {kakao && !kakao.connected && (
-        <div className="card">
-          <p className="err">카카오가 연결되지 않았습니다.</p>
-          <button onClick={() => (location.href = kakao.url)}>카카오 연결</button>
-        </div>
-      )}
-
-      <div className="card" ref={boxRef}>
+      <div className="card">
         <h2>1. 기사 이미지</h2>
         <div className="drop">
           {preview ? <img src={preview} alt="기사" /> : "여기에 Ctrl+V 로 붙여넣거나 파일을 선택하세요"}
@@ -102,7 +102,7 @@ function Compose() {
         </div>
       </div>
 
-      {imageUrl && (
+      {done && (
         <>
           <div className="card">
             <h2>2. 기사 정보 (수정 가능)</h2>
@@ -128,14 +128,17 @@ function Compose() {
           </div>
 
           <div className="card">
-            <h2>4. 카톡 미리보기</h2>
+            <h2>4. 결과</h2>
             <div className="preview">
-              <img src={imageUrl} alt="" />
+              <img src={preview} alt="" />
               <b>{headline}</b>{"\n"}{summary}{"\n"}{message}
             </div>
-            <button disabled={busy || !picked || !title || !summary || !kakao?.connected} onClick={send}>
-              {busy ? "전송 중…" : "카톡으로 보내기"}
-            </button>
+            <div className="row">
+              <button disabled={!result} onClick={copy}>텍스트 복사</button>
+              <button className="sub" disabled={busy || saved || !summary.trim()} onClick={save}>
+                {saved ? "저장됨" : "결과 저장"}
+              </button>
+            </div>
           </div>
         </>
       )}

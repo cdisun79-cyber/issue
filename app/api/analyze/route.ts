@@ -1,12 +1,10 @@
-import { randomUUID } from "crypto";
-import { supabaseAdmin } from "@/lib/supabase";
-import { analyzeArticle } from "@/lib/claude";
+import { analyzeArticle } from "@/lib/gemini";
 
 export const maxDuration = 60;
 
 const TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
 
-// 이미지 업로드 → Storage 저장 → Claude 분석
+// 이미지 → Gemini 분석 (이미지는 저장하지 않는다)
 export async function POST(req: Request) {
   const form = await req.formData();
   const file = form.get("image");
@@ -19,21 +17,9 @@ export async function POST(req: Request) {
   }
 
   const buf = Buffer.from(await file.arrayBuffer());
-  const ext = mediaType.split("/")[1];
-  const path = `${randomUUID()}.${ext}`;
-
-  const sb = supabaseAdmin();
-  const up = await sb.storage.from("articles").upload(path, buf, { contentType: mediaType });
-  if (up.error) return Response.json({ error: up.error.message }, { status: 500 });
-  const imageUrl = sb.storage.from("articles").getPublicUrl(path).data.publicUrl;
-
   try {
-    const analysis = await analyzeArticle(buf.toString("base64"), mediaType);
-    return Response.json({ imageUrl, ...analysis });
+    return Response.json(await analyzeArticle(buf.toString("base64"), mediaType));
   } catch (e) {
-    return Response.json(
-      { error: `분석 실패: ${(e as Error).message}`, imageUrl },
-      { status: 500 }
-    );
+    return Response.json({ error: `분석 실패: ${(e as Error).message}` }, { status: 500 });
   }
 }

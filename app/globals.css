@@ -15,7 +15,7 @@ button.sub { background: #e8eaee; color: #1c1e21; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .cand { padding: 10px; border: 1px solid #d7dae0; border-radius: 8px; cursor: pointer; background: #fff; text-align: left; color: inherit; font-weight: 400; }
 .cand.on { border-color: #2563eb; background: #eef3ff; }
-.preview { background: #fee500; border-radius: 12px; padding: 12px; white-space: pre-wrap; }
+.preview { background: #f1f3f6; border: 1px solid #d7dae0; border-radius: 12px; padding: 12px; white-space: pre-wrap; }
 .preview img { width: 100%; border-radius: 8px; margin-bottom: 8px; }
 .err { color: #c0262d; margin: 0; }
 .ok { color: #1a7f37; margin: 0; }

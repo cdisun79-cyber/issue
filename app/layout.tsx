@@ -10,6 +10,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <nav>
           <Link href="/">기사 전달</Link>
+          <Link href="/history">이력</Link>
           <Link href="/staff">담당현황</Link>
         </nav>
         <main>{children}</main>

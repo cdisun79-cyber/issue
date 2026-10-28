@@ -15,34 +15,21 @@ create table if not exists staff (
 create index if not exists staff_dept_trgm on staff using gin (dept_name gin_trgm_ops);
 create index if not exists staff_duties_trgm on staff using gin (duties gin_trgm_ops);
 
--- 발송 이력
-create table if not exists send_log (
-  id            uuid primary key default gen_random_uuid(),
-  image_url     text,
-  press_name    text,
-  article_title text,
-  article_text  text,
-  summary       text not null,
-  staff_id      uuid references staff(id),
-  message       text not null,
-  sent_at       timestamptz default now()
-);
-
--- 카카오 토큰 (서버 전용, 1인용이라 한 행 'me'만 사용)
-create table if not exists kakao_tokens (
-  id                 text primary key default 'me',
-  access_token       text not null,
-  refresh_token      text not null,
-  refresh_expires_at timestamptz not null
-);
-
 -- RLS: 정책이 없으면 클라이언트(anon/authenticated) 접근 차단.
 -- 모든 접근은 서버(API Route)의 service role로만 수행한다.
-alter table staff        enable row level security;
-alter table send_log     enable row level security;
-alter table kakao_tokens enable row level security;
+alter table staff enable row level security;
 
--- 기사 이미지 버킷 (카카오가 이미지 URL을 읽어야 하므로 public)
-insert into storage.buckets (id, name, public)
-values ('articles', 'articles', true)
-on conflict (id) do nothing;
+-- 분석 이력 (사용자가 [결과 저장]을 누를 때 기록)
+create table if not exists analysis_log (
+  id            uuid primary key default gen_random_uuid(),
+  press_name    text,
+  article_title text,
+  summary       text not null,
+  keywords      text[],
+  article_text  text,
+  staff_id      uuid references staff(id) on delete set null,
+  message       text,                -- 화면에 표시한 "*부서(이름직급)전달하겠습니다." 문구 스냅샷
+  created_at    timestamptz default now()
+);
+create index if not exists analysis_log_created_idx on analysis_log (created_at desc);
+alter table analysis_log enable row level security;
