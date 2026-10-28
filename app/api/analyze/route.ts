@@ -1,5 +1,4 @@
 import { randomUUID } from "crypto";
-import { requireUser, unauthorized } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { analyzeArticle } from "@/lib/claude";
 
@@ -9,9 +8,6 @@ const TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
 
 // 이미지 업로드 → Storage 저장 → Claude 분석
 export async function POST(req: Request) {
-  const user = await requireUser(req);
-  if (!user) return unauthorized();
-
   const form = await req.formData();
   const file = form.get("image");
   if (!(file instanceof File)) {
@@ -24,7 +20,7 @@ export async function POST(req: Request) {
 
   const buf = Buffer.from(await file.arrayBuffer());
   const ext = mediaType.split("/")[1];
-  const path = `${user.id}/${randomUUID()}.${ext}`;
+  const path = `${randomUUID()}.${ext}`;
 
   const sb = supabaseAdmin();
   const up = await sb.storage.from("articles").upload(path, buf, { contentType: mediaType });

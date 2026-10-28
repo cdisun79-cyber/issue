@@ -1,12 +1,8 @@
-import { requireUser, unauthorized } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { sendToMe } from "@/lib/kakao";
 
 // 서버에서 메시지를 조립한다 (클라이언트가 보낸 문구를 그대로 신뢰하지 않음)
 export async function POST(req: Request) {
-  const user = await requireUser(req);
-  if (!user) return unauthorized();
-
   const b = await req.json();
   const { pressName, title, summary, imageUrl, staffId, articleText } = b as {
     pressName?: string;
@@ -28,7 +24,7 @@ export async function POST(req: Request) {
   const message = `*${staff.dept_name}(${staff.name}${staff.rank})전달하겠습니다.`;
 
   try {
-    await sendToMe(user.id, {
+    await sendToMe({
       headline,
       description: `${summary}\n${message}`,
       imageUrl,
@@ -38,7 +34,6 @@ export async function POST(req: Request) {
   }
 
   await sb.from("send_log").insert({
-    user_id: user.id,
     image_url: imageUrl,
     press_name: pressName,
     article_title: title,

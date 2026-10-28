@@ -1,10 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { LoginGate, authFetch } from "@/lib/useAuth";
 
 type Staff = { id: string; dept_name: string; name: string; rank: string; duties: string | null };
 
-function Compose({ token }: { token: string }) {
+function Compose() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -21,10 +20,10 @@ function Compose({ token }: { token: string }) {
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    authFetch(token, "/api/kakao/login").then((r) => r.json()).then(setKakao);
+    fetch("/api/kakao/login").then((r) => r.json()).then(setKakao);
     const k = new URLSearchParams(location.search).get("kakao");
     if (k) setMsg({ ok: k === "ok", t: k === "ok" ? "카카오 연결 완료" : "카카오 연결 실패" });
-  }, [token]);
+  }, []);
 
   // Ctrl+V 이미지 붙여넣기
   useEffect(() => {
@@ -44,7 +43,7 @@ function Compose({ token }: { token: string }) {
   };
 
   const searchStaff = async (params: string) => {
-    const r = await authFetch(token, `/api/staff/search?${params}`);
+    const r = await fetch(`/api/staff/search?${params}`);
     const j = await r.json();
     setCands(j.staff ?? []);
     setPicked(j.staff?.[0] ?? null);
@@ -55,7 +54,7 @@ function Compose({ token }: { token: string }) {
     setBusy(true); setMsg(null);
     const fd = new FormData();
     fd.append("image", file);
-    const r = await authFetch(token, "/api/analyze", { method: "POST", body: fd });
+    const r = await fetch("/api/analyze", { method: "POST", body: fd });
     const j = await r.json();
     setBusy(false);
     if (!r.ok) return setMsg({ ok: false, t: j.error });
@@ -71,7 +70,7 @@ function Compose({ token }: { token: string }) {
   const send = async () => {
     if (!picked) return;
     setBusy(true);
-    const r = await authFetch(token, "/api/kakao/send", {
+    const r = await fetch("/api/kakao/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -146,5 +145,5 @@ function Compose({ token }: { token: string }) {
 }
 
 export default function Page() {
-  return <LoginGate>{(token) => <Compose token={token} />}</LoginGate>;
+  return <Compose />;
 }

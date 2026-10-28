@@ -1,23 +1,22 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { LoginGate, authFetch } from "@/lib/useAuth";
 
 type Staff = { id: string; dept_name: string; name: string; rank: string; duties: string | null };
 
-function StaffAdmin({ token }: { token: string }) {
+function StaffAdmin() {
   const [rows, setRows] = useState<Staff[]>([]);
   const [q, setQ] = useState("");
   const [msg, setMsg] = useState("");
 
   const load = useCallback(async () => {
-    const r = await authFetch(token, `/api/staff/search?q=${encodeURIComponent(q)}`);
+    const r = await fetch(`/api/staff/search?q=${encodeURIComponent(q)}`);
     setRows((await r.json()).staff ?? []);
-  }, [token, q]);
+  }, [q]);
   useEffect(() => { load(); }, [load]);
 
   const upload = async (f: File) => {
     const csv = await f.text();
-    const r = await authFetch(token, "/api/staff/import", {
+    const r = await fetch("/api/staff/import", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ csv }),
@@ -54,5 +53,5 @@ function StaffAdmin({ token }: { token: string }) {
 }
 
 export default function Page() {
-  return <LoginGate>{(token) => <StaffAdmin token={token} />}</LoginGate>;
+  return <StaffAdmin />;
 }

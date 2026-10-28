@@ -18,7 +18,6 @@ create index if not exists staff_duties_trgm on staff using gin (duties gin_trgm
 -- 발송 이력
 create table if not exists send_log (
   id            uuid primary key default gen_random_uuid(),
-  user_id       uuid references auth.users not null,
   image_url     text,
   press_name    text,
   article_title text,
@@ -29,9 +28,9 @@ create table if not exists send_log (
   sent_at       timestamptz default now()
 );
 
--- 카카오 토큰 (서버 전용)
+-- 카카오 토큰 (서버 전용, 1인용이라 한 행 'me'만 사용)
 create table if not exists kakao_tokens (
-  user_id            uuid primary key references auth.users,
+  id                 text primary key default 'me',
   access_token       text not null,
   refresh_token      text not null,
   refresh_expires_at timestamptz not null

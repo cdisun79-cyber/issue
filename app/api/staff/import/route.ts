@@ -1,4 +1,3 @@
-import { requireUser, unauthorized } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 
 // 간단한 CSV 파서 (따옴표/쉼표 지원)
@@ -29,9 +28,6 @@ function parseCsv(text: string): string[][] {
 
 // POST { csv: "부서명,이름,직급,업무\n..." }  → (부서명,이름) 기준 upsert
 export async function POST(req: Request) {
-  const user = await requireUser(req);
-  if (!user) return unauthorized();
-
   const { csv } = await req.json();
   const rows = parseCsv(String(csv ?? "").replace(/^﻿/, ""));
   const [header, ...body] = rows;
