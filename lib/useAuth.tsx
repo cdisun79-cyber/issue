@@ -6,11 +6,11 @@ export function useSession() {
   const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    supabaseBrowser.auth.getSession().then(({ data }) => {
+    supabaseBrowser().auth.getSession().then(({ data }) => {
       setToken(data.session?.access_token ?? null);
       setReady(true);
     });
-    const { data } = supabaseBrowser.auth.onAuthStateChange((_e, s) =>
+    const { data } = supabaseBrowser().auth.onAuthStateChange((_e, s) =>
       setToken(s?.access_token ?? null)
     );
     return () => data.subscription.unsubscribe();
@@ -34,7 +34,7 @@ export function LoginGate({ children }: { children: (token: string) => ReactNode
   if (token) return <>{children(token)}</>;
 
   const login = async () => {
-    const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password: pw });
+    const { error } = await supabaseBrowser().auth.signInWithPassword({ email, password: pw });
     setErr(error ? error.message : "");
   };
   return (
